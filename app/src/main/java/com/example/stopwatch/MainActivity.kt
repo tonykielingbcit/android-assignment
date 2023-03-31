@@ -10,19 +10,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.stopwatch.ui.theme.StopWatchTheme
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PointMode
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -30,12 +24,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.input.TextFieldValue
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,7 +48,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Timer(
     // total time of the timer
-    totalTime: Long,
+    //totalTime: Long,
 
     // circular handle color
     handleColor: Color,
@@ -76,6 +65,10 @@ fun Timer(
     strokeWidth: Dp = 5.dp
 ) {
     var serviceTimeToPlayInput by remember { mutableStateOf("") }
+    var totalTime by remember { mutableStateOf(0L) }
+    if (serviceTimeToPlayInput != "") {
+    totalTime = serviceTimeToPlayInput.toLong()
+    }
 
     // create variable for
     // size of the composable
@@ -90,11 +83,16 @@ fun Timer(
     // create variable for isTimerRunning
     var isTimerRunning by remember { mutableStateOf(false) }
 
+//    var currentTotalTime by remember { mutableStateOf(cur)}
+
     LaunchedEffect(key1 = currentTime, key2 = isTimerRunning) {
         if(currentTime > 0 && isTimerRunning) {
             delay(100L)
             currentTime -= 100L
             value = currentTime / totalTime.toFloat()
+//            println("currentTime::: " + currentTime.toLong())
+//            println("value::: " + value)
+//            println("currentTime::: " + (currentTime / totalTime / 100000).toLong())
         }
     }
     Column {
@@ -104,47 +102,23 @@ fun Timer(
                 .onSizeChanged { size = it }
         ) {
             // draw the timer
-            Canvas(modifier = modifier) {
-                // draw the inactive arc with following parameters
-                drawArc(
-                    color = inactiveBarColor, // assign the color
-                    startAngle = -215f, // assign the start angle
-                    sweepAngle = 250f, // arc angles
-                    useCenter = false, // prevents our arc to connect at te ends
-                    size = Size(size.width.toFloat(), size.height.toFloat()),
 
-                    // to make ends of arc round
-                    style = Stroke(strokeWidth.toPx(), cap = StrokeCap.Round)
+            Column(Modifier.fillMaxWidth()) {
+//                STILL working on the progress bar
+                Spacer(
+                    Modifier
+                        .height(15.dp)
+                        .fillMaxWidth()
+                        .background(color = Color.Green)
                 )
-                // draw the active arc with following parameters
-                drawArc(
-                    color = activeBarColor, // assign the color
-                    startAngle = -215f,  // assign the start angle
-                    /////////////////////////////////////////////////////////////
-                    sweepAngle = 250f * value, // reduce the sweep angle
-                    // with the current value
-                    useCenter = false, // prevents our arc to connect at te ends
-                    size = Size(size.width.toFloat(), size.height.toFloat()),
-
-                    // to make ends of arc round
-                    style = Stroke(strokeWidth.toPx(), cap = StrokeCap.Round)
-                )
-                // calculate the value from arc pointer position
-                // changing from val to var
-                var center = Offset(size.width / 2f, size.height / 2f)
-                var beta = (250f * value + 145f) * (PI / 180f).toFloat()
-//                var beta = (250f * currentTime / 45f + 145f) * (PI / 180f).toFloat()
-                var r = size.width / 2f
-                var a = cos(beta) * r
-                var b = sin(beta) * r
-                // draw the circular pointer/ cap
-                drawPoints(
-                    listOf(Offset(center.x + a, center.y + b)),
-                    pointMode = PointMode.Points,
-//                    color = handleColor,
-                    color = Color.Red,
-                    strokeWidth = (strokeWidth * 3f).toPx(),
-                    cap = StrokeCap.Round  // make the pointer round
+                LinearProgressIndicator(
+                    progress = value,
+//                    progress = (currentTime.toFloat() / totalTime.toFloat()),
+//                    progress = (currentTime.toFloat() / serviceTimeToPlayInput.toFloat()).toFloat(),
+                    modifier = Modifier
+                        .height(15.dp)
+                        .fillMaxWidth()
+                        .background(color = Color.Red),
                 )
             }
             // add value of the timer
@@ -177,9 +151,9 @@ fun Timer(
                 Text(
                     // change the text of button based on values
                     text =
-                        if (isTimerRunning && currentTime >= 0L) "Stop"
-                        else if (!isTimerRunning && currentTime >= 0L) "Start"
-                        else "Restart"
+                    if (isTimerRunning && currentTime >= 0L) "Stop"
+                    else if (!isTimerRunning && currentTime >= 0L) "Start"
+                    else "Restart"
                 )
             }
         }
@@ -193,10 +167,12 @@ fun Timer(
         EditTimeToPlay(
             value = serviceTimeToPlayInput,
             onValueChange = {
-                                serviceTimeToPlayInput = it
-                                currentTime = serviceTimeToPlayInput.toLong() * 1000L
-                                value = 1f
-                            },
+                serviceTimeToPlayInput = it
+                currentTime = serviceTimeToPlayInput.toLong() * 1000L
+//                value = currentTime.toFloat()
+//                totalTime = currentTime
+                value = 1f
+            },
             editingEnabled = !isTimerRunning
         )
 
@@ -205,20 +181,13 @@ fun Timer(
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = {
-                            isTimerRunning = false
-                            currentTime = totalTime
-                            value = 1f
-                            serviceTimeToPlayInput = ""
-                          },
+                    isTimerRunning = false
+                    currentTime = totalTime
+                    value = 1f
+                    serviceTimeToPlayInput = ""
+                },
             ) {
                 Text(text = "Reset")
-            }
-            Spacer(Modifier.width(20.dp))
-            Button(
-                modifier = Modifier.weight(1f),
-                onClick = { /*TODO*/ }
-            ) {
-                Text(text = "Beep is ON")
             }
         }
     }
@@ -237,8 +206,7 @@ fun EditTimeToPlay(
         colors = TextFieldDefaults.textFieldColors(textColor = Color.White),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         enabled = editingEnabled,
-//        label = { Text("Enter time in seconds")}
-        label = { Text("Enter time in seconds", style = TextStyle(color = Color.White))}
+        label = { Text("Enter time in seconds")}
     )
 }
 
@@ -249,7 +217,7 @@ fun AppWrapper() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Timer(
-                totalTime = 78L * 1000L,
+//                totalTime = 45L * 1000L,
                 handleColor = Color.Green,
                 inactiveBarColor = Color.DarkGray,
                 activeBarColor = Color(0xFF37B900),
